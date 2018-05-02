@@ -7,9 +7,13 @@ module Graticule #:nodoc:
     #   p location.coordinates
     #   #=> [37.423111, -122.081783
     #
+    # If don't have a Google business account, initialize with:
+    #
+    #   gg = Graticule.service(:google).new(MAPS_API_KEY)
+    #
     # If you have a Google business account, initialize with:
     #
-    #   gg = Graticule.service(:google).new(MAPS_API_KEY, MAPS_CLIENT_ID)
+    #   gg = Graticule.service(:google).new(MAPS_PUBLIC_KEY, MAPS_CLIENT_ID)
     #
     class Google < Base
       # https://developers.google.com/maps/documentation/geocoding/
@@ -17,7 +21,7 @@ module Graticule #:nodoc:
       def initialize(key=nil, client_id=nil)
         @key = key
         @client_id = client_id
-        @url = URI.parse 'http://maps.googleapis.com/maps/api/geocode/json'
+        @url = URI.parse 'https://maps.googleapis.com/maps/api/geocode/json'
       end
 
       # Locates +address+ returning a Location
@@ -45,7 +49,7 @@ module Graticule #:nodoc:
               when "route"
                 @route = component["short_name"]
               when "locality", "sublocality"
-                @locality = component["long_name"] 
+                @locality = component["long_name"]
               when "administrative_area_level_1"
                 @region = component["short_name"]
               when "country"
@@ -139,11 +143,13 @@ module Graticule #:nodoc:
       # the url as required by v3 of the library:
       #
       # https://developers.google.com/maps/documentation/business/webservices#digital_signatures
-      # 
+      #
       def make_url(params) #:nodoc:
         if @key && @client_id
           url = super params.merge(:sensor => false, :client => @client_id)
           make_signed_url(url)
+        elsif @key
+          super params.merge(:sensor => false, :key => @key)
         else
           super params.merge(:sensor => false)
         end
